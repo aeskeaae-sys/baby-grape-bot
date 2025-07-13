@@ -1,3 +1,6 @@
+
+require('dotenv').config();
+
 // ==================================================================
 //  ส่วนของการ Import และตั้งค่าเริ่มต้น
 // ==================================================================
@@ -93,7 +96,7 @@ async function updateScoreboard() {
             .sort(
                 ([, a], [, b]) => (b.weekly_score || 0) - (a.weekly_score || 0),
             )
-            .slice(0, 20);
+            .slice(0, 25);
         const weeklyEmbed = new EmbedBuilder()
             .setColor("Aqua")
             .setTitle("📅 กระดานคะแนนประจำสัปดาห์ 📅")
@@ -502,6 +505,25 @@ client.on("interactionCreate", async (interaction) => {
             } else {
                 return;
             }
+            // --- เพิ่มส่วนนี้เข้ามา: ตรวจสอบความถูกต้องของ URL (เวอร์ชันใหม่) ---
+            // 1. ต้องขึ้นต้นด้วย https://cdn.discordapp.com/
+            // 2. ต้องไม่มีตัวอักษรภาษาไทย
+            const discordCdnRegex = /^https:\/\/((cdn|media)\.discordapp\.(com|net))\/[^\s\u0E00-\u0E7F]*$/;
+
+            // ตรวจสอบรูปที่ 1 (รูปหลัก)
+            if (!discordCdnRegex.test(imageUrlFront)) {
+                return interaction.editReply({
+                    content: '❌ **URL รูปภาพหลักฐานไม่ถูกต้อง!**\nต้องเป็นลิงก์รูปภาพที่คัดลอกมาจาก Discord โดยตรง และห้ามมีอักษรภาษาไทย กรุณาส่งใหม่อีกครั้งนะคับ'
+                });
+            }
+
+            // ตรวจสอบรูปที่ 2 (รูปหลังร้าน) ก็ต่อเมื่อมีค่าเท่านั้น
+            if (imageUrlBack && !discordCdnRegex.test(imageUrlBack)) {
+                return interaction.editReply({
+                    content: '❌ **URL รูปภาพหลังร้านไม่ถูกต้อง!**\nต้องเป็นลิงก์รูปภาพที่คัดลอกมาจาก Discord โดยตรง และห้ามมีอักษรภาษาไทย กรุณาส่งใหม่อีกครั้งนะคับ'
+                });
+            }
+            // --- จบส่วนที่เพิ่ม ---
             const scoreToAdd = time === "peak" ? 10 : 2;
             const timeText = time === "peak" ? "พีคไทม์" : "นอกเวลา";
             const memberObjects = interaction.guild.members.cache.filter(
